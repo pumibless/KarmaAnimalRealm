@@ -10,24 +10,41 @@ public enum StatName {
 
 public class StatsManager : MonoBehaviour
 {
-    // -- CONSTS --
+    // ------
+    // CONSTS
+    // ------
     const int NUM_STATS = 4;
 
-    // unit per 1/50th of a second
-    const float STAMINA_GAIN_RATE = 0.25f;
-    const float STAMINA_LOSS_RATE = -STAMINA_GAIN_RATE * 2;
     float BAR_WIDTH; // used as a const
 
-    // -- PUBLIC VARIABLES --
+    // ----------------
+    // PUBLIC VARIABLES
+    // ----------------
     public Color[] barColors = new Color[NUM_STATS];
     public GameObject barPrefab;
 
-    // -- PRIVATE VARIABLES --
+    // the rate of loss is X_LOSS_AMOUNT/X_LOSS_INTERVAL units per second
+    public float hungerLossAmount = -1.0f;
+    public float hungerLossInterval = 3.0f;
+    public float thirstLossAmount = -1.0f;
+    public float thirstLossInterval = 1.0f;
+
+    // unit per 1/50th of a second
+    public float staminaGainRate = 0.1f;
+    public float staminaLossRate = -0.2f;
+
+    // -----------------
+    // PRIVATE VARIABLES
+    // -----------------
     GameObject overlayMenu;
     
     // arrays, not lists, are used bc i think arrays are faster, and no need to add or remove
     float[] stats = new float[NUM_STATS];
     RectTransform[] barRt = new RectTransform[NUM_STATS];
+
+    float hungerTimer;
+    float thirstTimer;
+
 
     void Start() {
         overlayMenu = GameObject.Find("Canvas/Overlay Menu");
@@ -42,6 +59,9 @@ public class StatsManager : MonoBehaviour
             barRt[i].localPosition = new Vector2(barRt[i].localPosition[0], -i*100+100); // TODO: y-component is placeholder, arbitrary math
         }
 
+        hungerTimer = Time.time;
+        thirstTimer = Time.time;
+
         BAR_WIDTH = barRt[0].rect.width;
     }
 
@@ -52,9 +72,17 @@ public class StatsManager : MonoBehaviour
 
     void FixedUpdate() {
         if (Input.GetAxisRaw("Vertical") != 0 ||  Input.GetAxisRaw("Horizontal") != 0)
-            ChangeStat(StatName.Stamina, STAMINA_LOSS_RATE);
+            ChangeStat(StatName.Stamina, staminaLossRate);
         else
-            ChangeStat(StatName.Stamina, STAMINA_GAIN_RATE);
+            ChangeStat(StatName.Stamina, staminaGainRate);
+        if (Time.time - hungerTimer > hungerLossInterval) {
+            ChangeStat(StatName.Hunger, hungerLossAmount);
+            hungerTimer = Time.time;
+        }
+        if (Time.time - thirstTimer > thirstLossInterval) {
+            ChangeStat(StatName.Thirst, thirstLossAmount);
+            thirstTimer = Time.time;
+        }
     }
 
     protected void ChangeStat(StatName stat, float num) {
